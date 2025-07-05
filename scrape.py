@@ -3,10 +3,16 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 def get_html(url):
-    response = requests.get(url)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/120.0.0.0 Safari/537.36"
+    }
+    response = requests.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(f"Failed to load page: {url} (status {response.status_code})")
     return response.text
+
 
 def manual_css_select(soup, selector, fields):
     data = []
