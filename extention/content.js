@@ -17,9 +17,8 @@ window.startYelpScraper = async function() {
     // Wait for navigation
     await new Promise(res => setTimeout(res, 2000 + Math.random() * 1200));
 
-    // SCRAPE on business page using only 100% confirmed selectors:
-    let name = document.querySelector('h1')?.innerText || "";
-    let address = document.querySelector('address')?.innerText || "";
+    // === SCRAPE only name, website, phone ===
+    let name = document.querySelector('h1.y-css-olzveb')?.innerText || "";
     let website = "";
     let websiteEl = document.querySelector('a[href^="/biz_redir?url="]');
     if (websiteEl) {
@@ -27,7 +26,7 @@ window.startYelpScraper = async function() {
     }
     let phone = document.querySelector('p.y-css-qn4gww[data-font-weight="semibold"]')?.innerText || "";
 
-    results.push({name, address, website, phone});
+    results.push({name, website, phone});
 
     // Go back
     window.history.back();
