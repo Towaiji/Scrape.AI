@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Yelp Scraper</title>
+  <style>
+    body { font-family: Arial, sans-serif; width: 300px; }
+    button { margin: 10px 0; }
+    table { width: 100%; font-size: 12px; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 3px; }
+    th { background: #eee; }
+  </style>
+</head>
+<body>
+  <h3>Yelp Scraper</h3>
+  <button id="scrapeBtn">Scrape Results</button>
+  <button id="downloadBtn" style="display:none;">Download CSV</button>
+  <div id="status"></div>
+  <table id="resultsTable" style="display:none;">
+    <thead>
+      <tr><th>Name</th><th>Phone</th><th>Website</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Yelp Business Scraper",
+  "version": "1.0",
+  "description": "Scrape business names, phone numbers, and websites from Yelp search results.",
+  "permissions": ["scripting", "activeTab"],
+  "host_permissions": ["https://www.yelp.com/search*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.yelp.com/search*"],
+      "js": ["content.js"]
+    }
+  ]
+}
