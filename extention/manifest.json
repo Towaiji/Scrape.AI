@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Yelp Business Scraper",
+  "description": "Scrape Yelp business details and export as CSV.",
+  "version": "1.0",
+  "permissions": [
+    "scripting",
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.yelp.com/search*",
+    "https://www.yelp.com/biz/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Yelp Scraper"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.yelp.com/search*"],
+      "js": ["content.js"]
+    }
+  ]
+}
