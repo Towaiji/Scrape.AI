@@ -1,42 +1,40 @@
 window.startYelpScraper = async function() {
   let results = [];
-  let businessCards = Array.from(document.querySelectorAll('div[data-testid="searchResult"]'));
-  // Filter out sponsored cards
-  businessCards = businessCards.filter(card => !card.innerText.includes("Sponsored"));
-
-  async function scrapeBusiness(card, idx) {
+  let businessCards = Array.from(document.querySelectorAll('div.toggle__09f24__fZMQ4[data-testid="scrollable-photos-card"]'));
+  for (let i = 0; i < businessCards.length; i++) {
+    let card = businessCards[i];
     card.scrollIntoView({behavior: 'smooth'});
-    await new Promise(res => setTimeout(res, 800 + Math.random() * 700)); // Random delay
+    await new Promise(res => setTimeout(res, 900 + Math.random()*700));
 
-    // Find and click the business link
-    let link = card.querySelector('a[href^="/biz/"]');
-    if (!link) return;
-    link.target = "_self"; // Ensure opens in same tab
+    // Get business link
+    let link = card.querySelector('h3 a.y-css-1x1e1r2');
+    if(!link) continue;
+
+    // Open in this tab (simulate click)
+    link.target = "_self";
     link.click();
 
     // Wait for navigation
-    await new Promise(res => setTimeout(res, 1800 + Math.random() * 1200));
-    // Scrape data
+    await new Promise(res => setTimeout(res, 2000 + Math.random()*1200));
+
+    // SCRAPE on business page
     let name = document.querySelector('h1')?.innerText || "";
     let address = document.querySelector('address')?.innerText || "";
     let phone = "";
     let phoneEl = Array.from(document.querySelectorAll('p')).find(p => /\(\d{3}\)\s?\d{3}-\d{4}/.test(p.innerText));
     if(phoneEl) phone = phoneEl.innerText;
-    let reviews = document.querySelector('[data-testid="reviewCount"]')?.innerText || "";
-
+    let reviews = "";
+    let reviewsEl = document.querySelector('[data-testid="reviewCount"]');
+    if(reviewsEl) reviews = reviewsEl.innerText;
     results.push({name, address, phone, reviews});
 
-    // Go back to results page
+    // Go back
     window.history.back();
-    await new Promise(res => setTimeout(res, 1800 + Math.random() * 900));
-    // Re-select cards after navigation
-    businessCards = Array.from(document.querySelectorAll('div[data-testid="searchResult"]')).filter(card => !card.innerText.includes("Sponsored"));
-  }
+    await new Promise(res => setTimeout(res, 2200 + Math.random()*900));
 
-  for (let i = 0; i < businessCards.length; i++) {
-    await scrapeBusiness(businessCards[i], i);
+    // Re-select cards (in case page reloaded)
+    businessCards = Array.from(document.querySelectorAll('div.toggle__09f24__fZMQ4[data-testid="scrollable-photos-card"]'));
   }
-
   // Save results
   chrome.storage.local.set({yelpResults: results}, () => {
     chrome.runtime.sendMessage({scrapingDone: true});
