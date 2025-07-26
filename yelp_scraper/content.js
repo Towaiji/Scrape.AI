@@ -17,34 +17,54 @@ async function getPhoneNumber(profileUrl) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scrapeYelp") {
     (async () => {
-      const results = [];
-      // Select all business cards
-      document.querySelectorAll('div[data-testid="scrollable-photos-card"]').forEach(card => {
-        // Extract name
-        const name = card.querySelector('div[data-traffic-crawl-id="SearchResultBizName"] a')?.innerText.trim() || "";
-        // Extract profile URL (relative)
-        const relUrl = card.querySelector('div[data-traffic-crawl-id="SearchResultBizName"] a')?.getAttribute('href') || "";
-        // Construct absolute URL
-        const profileUrl = relUrl.startsWith("http") ? relUrl : `https://www.yelp.com${relUrl}`;
-        if (name && relUrl) {
-          results.push({ name, profileUrl });
-        }
-      });
+      let allResults = [];
+      let pagesToScrape = request.numPages || 1;
+      let currentPage = 1;
+      let keepGoing = true;
 
-      // For each business, fetch the phone number from their profile page and send progress updates
-      for (let i = 0; i < results.length; i++) {
-        const biz = results[i];
-        biz.phone = await getPhoneNumber(biz.profileUrl);
-        // Send progress update to the popup
-        chrome.runtime.sendMessage({
-          type: "progress",
-          current: i + 1,
-          total: results.length,
-          name: biz.name
+      while (currentPage <= pagesToScrape && keepGoing) {
+        // SCRAPE CURRENT PAGE
+        const results = [];
+        document.querySelectorAll('div[data-testid="scrollable-photos-card"]').forEach(card => {
+          const name = card.querySelector('div[data-traffic-crawl-id="SearchResultBizName"] a')?.innerText.trim() || "";
+          const relUrl = card.querySelector('div[data-traffic-crawl-id="SearchResultBizName"] a')?.getAttribute('href') || "";
+          const profileUrl = relUrl.startsWith("http") ? relUrl : `https://www.yelp.com${relUrl}`;
+          if (name && relUrl) {
+            results.push({ name, profileUrl });
+          }
         });
+
+        // Fetch phone for each business
+        for (let i = 0; i < results.length; i++) {
+          const biz = results[i];
+          biz.phone = await getPhoneNumber(biz.profileUrl);
+          chrome.runtime.sendMessage({
+            type: "progress",
+            current: i + 1,
+            total: results.length,
+            name: biz.name,
+            page: currentPage
+          });
+        }
+
+        allResults = allResults.concat(results);
+
+        // If more pages to scrape, click "Next"
+        if (currentPage < pagesToScrape) {
+          const nextBtn = Array.from(document.querySelectorAll('button.pagination-button__09f24__kbFYf'))
+            .find(btn => btn.innerText.trim().toLowerCase() === "next page");
+
+          if (nextBtn) {
+            nextBtn.click();
+            await new Promise(res => setTimeout(res, 3500)); // or longer if Yelp is slow
+          } else {
+            keepGoing = false; // No more pages
+          }
+        }
+        currentPage++;
       }
 
-      sendResponse({ data: results });
+      sendResponse({ data: allResults });
     })();
     return true; // Indicate async
   }
