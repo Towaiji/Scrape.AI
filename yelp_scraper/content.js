@@ -26,13 +26,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // SCRAPE CURRENT PAGE
         const results = [];
         document.querySelectorAll('div[data-testid="scrollable-photos-card"]').forEach(card => {
-          const name = card.querySelector('div[data-traffic-crawl-id="SearchResultBizName"] a')?.innerText.trim() || "";
-          const relUrl = card.querySelector('div[data-traffic-crawl-id="SearchResultBizName"] a')?.getAttribute('href') || "";
-          const profileUrl = relUrl.startsWith("http") ? relUrl : `https://www.yelp.com${relUrl}`;
-          if (name && relUrl) {
+          const bizLink = card.querySelector('div[data-traffic-crawl-id="SearchResultBizName"] a');
+          const href = bizLink?.getAttribute('href') || "";
+
+          // Only include real business cards (skip ads/sponsored)
+          if (!href.startsWith("/biz/")) return;
+
+          const name = bizLink?.innerText.trim() || "";
+          const profileUrl = `https://www.yelp.com${href}`;
+          if (name) {
             results.push({ name, profileUrl });
           }
         });
+
 
         // Fetch phone for each business
         for (let i = 0; i < results.length; i++) {
@@ -64,7 +70,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         currentPage++;
       }
 
-      sendResponse({ data: allResults });
+      // Remove duplicates by profileUrl
+      const uniqueResults = [];
+      const seen = new Set();
+      for (const biz of allResults) {
+        if (!seen.has(biz.profileUrl)) {
+          seen.add(biz.profileUrl);
+          uniqueResults.push(biz);
+        }
+      }
+      sendResponse({ data: uniqueResults });
+
     })();
     return true; // Indicate async
   }
