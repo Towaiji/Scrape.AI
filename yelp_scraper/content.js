@@ -34,11 +34,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           const name = bizLink?.innerText.trim() || "";
           const profileUrl = `https://www.yelp.com${href}`;
+
+          // ==== NEW: Scrape categories ====
+          let categories = "";
+          const categoriesDiv = card.querySelector('div[data-testid="serp-ia-categories"]');
+          if (categoriesDiv) {
+            const categoryList = Array.from(categoriesDiv.querySelectorAll('a > button > span'))
+              .map(span => span.innerText.trim())
+              .filter(Boolean);
+            categories = categoryList.join(", ");
+          }
+
           if (name) {
-            results.push({ name, profileUrl });
+            results.push({ name, profileUrl, categories });
           }
         });
-
 
         // Fetch phone for each business
         for (let i = 0; i < results.length; i++) {
