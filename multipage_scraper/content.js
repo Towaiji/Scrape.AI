@@ -3,6 +3,16 @@
 // ---- helpers ----
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const jitter = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+async function waitForCondition(cond, timeoutMs = 15000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      if (cond()) return true;
+    } catch {}
+    await sleep(250);
+  }
+  return false;
+}
 
 // -------------------- YELP --------------------
 function yelpGetCards() {
@@ -226,6 +236,7 @@ async function ypWaitForNewResults(prevUrl, prevFirst, timeoutMs = 15000) {
   return false;
 }
 async function scrapeYellowPages() {
+  await waitForCondition(() => ypGetCards().length > 0);
   let allResults = [];
   let page = 1;
   while (true) {
@@ -238,6 +249,7 @@ async function scrapeYellowPages() {
         )
         ?.innerText.trim() || "";
     const pageResults = ypScrapePageOnce();
+    if (!pageResults.length) break;
     const have = new Set(allResults.map(r => r.profileUrl));
     for (const r of pageResults) {
       if (!have.has(r.profileUrl)) {
@@ -251,6 +263,7 @@ async function scrapeYellowPages() {
     next.click();
     const changed = await ypWaitForNewResults(prevUrl, prevFirst);
     if (!changed) break;
+    await waitForCondition(() => ypGetCards().length > 0);
     page++;
     await sleep(jitter(800, 1500));
   }
@@ -315,6 +328,10 @@ async function gmScrollToEnd(container) {
 async function scrapeGoogleMaps() {
   const allResults = [];
   const seen = new Set();
+  await waitForCondition(() => {
+    const list = document.querySelector('.m6QErb, .DxyBCb');
+    return !!list && gmGetCards().length > 0;
+  });
   const list = document.querySelector('.m6QErb, .DxyBCb');
   if (!list) return allResults;
   await gmScrollToEnd(list);
