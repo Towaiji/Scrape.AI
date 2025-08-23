@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Multipage Business Scraper",
+  "version": "1.0",
+  "description": "Scrape business data from Yelp, YellowPages, and Google Maps.",
+  "permissions": ["scripting", "activeTab", "storage"],
+  "host_permissions": [
+    "https://www.yelp.com/search*",
+    "https://www.yellowpages.ca/search*",
+    "https://www.google.com/maps/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.yelp.com/search*"],
+      "js": ["yelp.js"]
+    },
+    {
+      "matches": ["https://www.yellowpages.ca/search*"],
+      "js": ["yellowpages.js"]
+    },
+    {
+      "matches": ["https://www.google.com/maps/*"],
+      "js": ["gmaps.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

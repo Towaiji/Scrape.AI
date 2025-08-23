@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Multipage Scraper</title>
+  <style>
+    body { font-family: Arial, sans-serif; width: 300px; }
+    button { margin: 10px 0; }
+    table { width: 100%; font-size: 12px; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 3px; }
+    th { background: #eee; }
+  </style>
+</head>
+<body>
+  <h3>Multipage Scraper</h3>
+  <label>Website:
+    <select id="site">
+      <option value="yelp">Yelp</option>
+      <option value="yellow">YellowPages.ca</option>
+      <option value="gmaps">Google Maps</option>
+    </select>
+  </label>
+  <button id="openBtn">Open Search Page</button>
+  <button id="scrapeBtn">Start Scrape</button>
+  <button id="downloadBtn" style="display:none;">Download CSV</button>
+  <div id="status"></div>
+  <table id="resultsTable" style="display:none;">
+    <thead>
+  <tr>
+    <th>Name</th>
+    <th>Phone</th>
+    <th>Categories</th>
+    <th>Website</th>
+  </tr>
+</thead>
+
+    <tbody></tbody>
+  </table>
+  <script src="popup.js"></script>
+</body>
+</html>
