@@ -6,7 +6,7 @@
   "permissions": ["scripting", "activeTab", "storage"],
   "host_permissions": [
     "https://www.yelp.com/*",
-    "https://www.yellowpages.com/*",
+    "https://www.yellowpages.ca/*",
     "https://www.google.com/maps/*"
   ],
   "background": {
@@ -19,7 +19,7 @@
     {
       "matches": [
         "https://www.yelp.com/*",
-        "https://www.yellowpages.com/*",
+        "https://www.yellowpages.ca/*",
         "https://www.google.com/maps/*"
       ],
       "js": ["content.js"]
