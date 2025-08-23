@@ -45,7 +45,7 @@ document.getElementById("openBtn").addEventListener("click", () => {
   if (site === "yelp") {
     url = `https://www.yelp.com/search?find_desc=${keyword}&find_loc=${location}`;
   } else if (site === "yellowpages") {
-    url = `https://www.yellowpages.ca/search/si/1/${keyword}/${location}`;
+    url = `https://www.yellowpages.com/search?search_terms=${keyword}&geo_location_terms=${location}`;
   } else if (site === "googlemaps") {
     url = `https://www.google.com/maps/search/${keyword}+${location}`;
   }

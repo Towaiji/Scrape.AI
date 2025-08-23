@@ -3,16 +3,6 @@
 // ---- helpers ----
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const jitter = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
-async function waitForCondition(cond, timeoutMs = 15000) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    try {
-      if (cond()) return true;
-    } catch {}
-    await sleep(250);
-  }
-  return false;
-}
 
 // -------------------- YELP --------------------
 function yelpGetCards() {
@@ -187,31 +177,16 @@ async function scrapeYelp() {
 
 // -------------------- YELLOW PAGES --------------------
 function ypGetCards() {
-  return Array.from(
-    document.querySelectorAll(
-      'div.jsListing, div.listing, div.result, div.business-card, li.listing'
-    )
-  );
+  return Array.from(document.querySelectorAll('div.result, div.business-card'));
 }
 function ypScrapePageOnce() {
   const out = [];
   for (const card of ypGetCards()) {
-    const link =
-      card.querySelector(
-        'a.business-name, a.listing__name--link, a[itemprop="url"], a[data-entityname], a[href*="/bus/"]'
-      );
+    const link = card.querySelector('a.business-name');
     const name = (link?.innerText || "").trim();
     const profileUrl = link?.href || "";
-    const phone =
-      card
-        .querySelector('a[href^="tel:"], .phones, .mlr__contacts__detail, [itemprop="telephone"]')
-        ?.innerText.replace(/^Tel\s*/i, "")
-        .trim() || "";
-    const categories = Array.from(
-      card.querySelectorAll(
-        '.categories a, .listing__content__tags a, .mlr__tags .mlr__tag, [class*="category"] a'
-      )
-    )
+    const phone = card.querySelector('.phones')?.innerText.trim() || "";
+    const categories = Array.from(card.querySelectorAll('.categories a'))
       .map(a => a.innerText.trim())
       .filter(Boolean)
       .join(', ');
@@ -224,32 +199,20 @@ async function ypWaitForNewResults(prevUrl, prevFirst, timeoutMs = 15000) {
   while (Date.now() - start < timeoutMs) {
     if (location.href !== prevUrl) return true;
     const firstCard = ypGetCards()[0];
-    const name =
-      firstCard
-        ?.querySelector(
-          'a.business-name, a.listing__name--link, a[itemprop="url"], a[data-entityname], a[href*="/bus/"]'
-        )
-        ?.innerText.trim();
+    const name = firstCard?.querySelector('a.business-name')?.innerText.trim();
     if (name && name !== prevFirst) return true;
     await sleep(250);
   }
   return false;
 }
 async function scrapeYellowPages() {
-  await waitForCondition(() => ypGetCards().length > 0);
   let allResults = [];
   let page = 1;
   while (true) {
     const prevUrl = location.href;
     const firstCard = ypGetCards()[0];
-    const prevFirst =
-      firstCard
-        ?.querySelector(
-          'a.business-name, a.listing__name--link, a[itemprop="url"], a[data-entityname], a[href*="/bus/"]'
-        )
-        ?.innerText.trim() || "";
+    const prevFirst = firstCard?.querySelector('a.business-name')?.innerText.trim() || "";
     const pageResults = ypScrapePageOnce();
-    if (!pageResults.length) break;
     const have = new Set(allResults.map(r => r.profileUrl));
     for (const r of pageResults) {
       if (!have.has(r.profileUrl)) {
@@ -258,12 +221,11 @@ async function scrapeYellowPages() {
       }
     }
     chrome.runtime.sendMessage({ type: "partial", results: allResults });
-    const next = document.querySelector('a.next, a[rel="next"], a[aria-label="Next"]');
+    const next = document.querySelector('a.next, a[rel="next"]');
     if (!next) break;
     next.click();
     const changed = await ypWaitForNewResults(prevUrl, prevFirst);
     if (!changed) break;
-    await waitForCondition(() => ypGetCards().length > 0);
     page++;
     await sleep(jitter(800, 1500));
   }
@@ -278,43 +240,11 @@ function gmScrapeVisible() {
   const out = [];
   for (const card of gmGetCards()) {
     const name = card.querySelector('.qBF1Pd')?.innerText.trim() || '';
+    const categories = card.querySelector('.W4Efsd')?.innerText.trim() || '';
     const profileUrl = card.querySelector('a.hfpxzc')?.href || '';
-    if (name) out.push({ name, categories: '', profileUrl, phone: '' });
+    if (name) out.push({ name, categories, profileUrl, phone: '' });
   }
   return out;
-}
-async function gmFetchDetails(profileUrl) {
-  await sleep(jitter(150, 450));
-  try {
-    const resp = await fetch(profileUrl, { credentials: 'include' });
-    const text = await resp.text();
-    const doc = new DOMParser().parseFromString(text, 'text/html');
-    let phone =
-      doc
-        .querySelector('a[href^="tel:"]')
-        ?.getAttribute('href')
-        ?.replace(/^tel:/, '')
-        .trim() || '';
-    let category = '';
-    const ld = doc.querySelector('script[type="application/ld+json"]');
-    if (ld) {
-      try {
-        const data = JSON.parse(ld.textContent || '{}');
-        if (!phone && data.telephone) phone = data.telephone.trim();
-        if (Array.isArray(data['@type'])) category = data['@type'].join(', ');
-        else if (typeof data['@type'] === 'string') category = data['@type'];
-        if (data.servesCuisine) {
-          const sc = Array.isArray(data.servesCuisine)
-            ? data.servesCuisine.join(', ')
-            : data.servesCuisine;
-          category = category ? `${category}, ${sc}` : sc;
-        }
-      } catch {}
-    }
-    return { phone, categories: category };
-  } catch {
-    return { phone: '', categories: '' };
-  }
 }
 async function gmScrollToEnd(container) {
   let last = -1;
@@ -328,32 +258,17 @@ async function gmScrollToEnd(container) {
 async function scrapeGoogleMaps() {
   const allResults = [];
   const seen = new Set();
-  await waitForCondition(() => {
-    const list = document.querySelector('.m6QErb, .DxyBCb');
-    return !!list && gmGetCards().length > 0;
-  });
   const list = document.querySelector('.m6QErb, .DxyBCb');
   if (!list) return allResults;
   await gmScrollToEnd(list);
   const items = gmScrapeVisible();
-  for (let i = 0; i < items.length; i++) {
-    const r = items[i];
-    if (seen.has(r.profileUrl)) continue;
-    seen.add(r.profileUrl);
-    const details = await gmFetchDetails(r.profileUrl);
-    r.phone = details.phone;
-    r.categories = details.categories;
-    allResults.push(r);
-    chrome.runtime.sendMessage({
-      type: 'progress',
-      current: i + 1,
-      total: items.length,
-      name: r.name,
-      page: 1
-    });
-    chrome.runtime.sendMessage({ type: 'partial', results: allResults });
-    await sleep(jitter(250, 750));
+  for (const r of items) {
+    if (!seen.has(r.profileUrl)) {
+      seen.add(r.profileUrl);
+      allResults.push(r);
+    }
   }
+  chrome.runtime.sendMessage({ type: "partial", results: allResults });
   return allResults;
 }
 
