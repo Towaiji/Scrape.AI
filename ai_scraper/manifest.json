@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "AI Web Scraper",
+  "description": "Use AI to figure out how to scrape the current page.",
+  "version": "0.1",
+  "permissions": ["scripting", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "AI Scraper" },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
