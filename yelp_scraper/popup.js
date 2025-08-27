@@ -4,9 +4,12 @@ function populateTable(data) {
   data.forEach(row => {
     const phoneCell = row.phone ? row.phone : "<span style='color:#aaa'>(not found)</span>";
     const categoryCell = row.categories ? row.categories : "<span style='color:#aaa'>(none)</span>";
-    const profileLink = `<a href="${row.profileUrl}" target="_blank">profile</a>`;
+    const profileLink = row.profileUrl ? `<a href="${row.profileUrl}" target="_blank">profile</a>` : "<span style='color:#aaa'>(none)</span>";
+    const websiteLink = row.website ? `<a href="${row.website}" target="_blank">website</a>` : "<span style='color:#aaa'>(none)</span>";
+    const emailsCell = (row.emails && row.emails.length) ? row.emails.join('<br>') : "<span style='color:#aaa'>(none)</span>";
+
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${row.name}</td><td>${phoneCell}</td><td>${categoryCell}</td><td>${profileLink}</td>`;
+    tr.innerHTML = `<td>${row.name}</td><td>${phoneCell}</td><td>${categoryCell}</td><td>${profileLink}</td><td>${websiteLink}</td><td>${emailsCell}</td>`;
     tbody.appendChild(tr);
   });
   document.getElementById("resultsTable").style.display = data.length ? "" : "none";
@@ -47,12 +50,14 @@ document.getElementById("downloadBtn").addEventListener("click", () => {
   chrome.storage.local.get("results", ({ results }) => {
     const data = results || [];
     const csvRows = [
-      ["Name", "Phone", "Categories", "Profile URL"],
+      ["Name", "Phone", "Categories", "Profile URL", "Website", "Emails"],
       ...data.map(r => [
-        `"${r.name}"`,
-        `"${r.phone || ''}"`,
-        `"${r.categories || ''}"`,
-        `"${r.profileUrl}"`
+        `"${(r.name || '').replace(/"/g,'""')}"`,
+        `"${(r.phone || '').replace(/"/g,'""')}"`,
+        `"${(r.categories || '').replace(/"/g,'""')}"`,
+        `"${(r.profileUrl || '').replace(/"/g,'""')}"`,
+        `"${(r.website || '').replace(/"/g,'""')}"`,
+        `"${((r.emails || []).join(' | ')).replace(/"/g,'""')}"`
       ])
     ];
     const csv = csvRows.map(row => row.join(",")).join("\n");

@@ -12,9 +12,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         { action: 'scrapeYelp', numPages: message.numPages },
         response => {
           if (chrome.runtime.lastError || !response) {
-            chrome.storage.local.set({ status: "Error: Could not scrape. Make sure you're on a Yelp search page.", results: [] });
+            chrome.storage.local.set({
+              status: "Error: Could not scrape. Make sure you're on a Yelp search page.",
+              results: []
+            });
           } else {
-            chrome.storage.local.set({ status: `Found ${response.data.length} results.`, results: response.data });
+            chrome.storage.local.set({
+              status: `Found ${response.data.length} results.`,
+              results: response.data
+            });
           }
         }
       );
@@ -22,6 +28,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ started: true });
     return true; // keep message channel open for async response
   } else if (message.type === 'progress') {
-    chrome.storage.local.set({ status: `Scraping page ${message.page} — ${message.current} of ${message.total}: ${message.name}` });
+    chrome.storage.local.set({
+      status: `Scraping page ${message.page} — ${message.current} of ${message.total}: ${message.name}`
+    });
+  } else if (message.action === 'externalFetch') {
+    // Cross-origin HTML fetch (for business websites) with host_permissions
+    (async () => {
+      try {
+        const res = await fetch(message.url, { method: 'GET', redirect: 'follow' });
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('text/html')) {
+          sendResponse({ ok: false, status: res.status, html: '' });
+          return;
+        }
+        const html = await res.text();
+        sendResponse({ ok: true, status: res.status, html });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e) });
+      }
+    })();
+    return true; // async
   }
 });
